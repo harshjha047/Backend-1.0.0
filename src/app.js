@@ -15,7 +15,7 @@ const app = express();
 // Middlewares
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:5173",   // your frontend URL
+  origin: "https://div-ecom.netlify.app/",   // your frontend URL
   credentials: true,                 // allow cookies/credentials
 }));
 app.use(morgan("dev"));
