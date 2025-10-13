@@ -29,12 +29,14 @@ const registerUser = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.cookie("token", generateToken, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "lax", // or "strict" / "none" if using HTTPS
-      secure: false, // set true in production with HTTPS
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
-    res.status(201).json(user);
+    res.status(201).json({ accessToken, user });
+    // res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -67,12 +69,13 @@ const loginUser = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.cookie("token", generateToken, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      sameSite: "lax", // or "strict" / "none" if using HTTPS
-      secure: false, // set true in production with HTTPS
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
-    res.json(user);
+    res.status(200).json({ accessToken, user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -320,13 +323,18 @@ const addToWishlist = async (req, res) => {
 const removeFromWishlist = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-     if (!user) return res.status(404).json({ message: "User not found" });
-    const {productId} = req.params;
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const { productId } = req.params;
 
     user.wishlist = user.wishlist.filter((id) => id.toString() !== productId);
 
     await user.save();
-    res.status(200).json({ message: "Product removed from wishlist", wishlist: user.wishlist });
+    res
+      .status(200)
+      .json({
+        message: "Product removed from wishlist",
+        wishlist: user.wishlist,
+      });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
