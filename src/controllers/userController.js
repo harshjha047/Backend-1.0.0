@@ -18,25 +18,27 @@ const registerUser = async (req, res) => {
       email,
       password,
     });
-    // Generate JWT Token
-    const generateToken = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role, // include user role
-      },
+    const accessToken = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.cookie("refreshToken", refreshToken, {
+    // Optional refresh token
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.cookie("token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "none",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
+
     res.status(201).json({ accessToken, user });
-    // res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -58,23 +60,26 @@ const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
-    // Generate JWT Token
-    const generateToken = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role, // include user role
-      },
+    const accessToken = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.cookie("refreshToken", refreshToken, {
+    // Optional refresh token
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.cookie("token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "none",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
+
     res.status(200).json({ accessToken, user });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -329,12 +334,10 @@ const removeFromWishlist = async (req, res) => {
     user.wishlist = user.wishlist.filter((id) => id.toString() !== productId);
 
     await user.save();
-    res
-      .status(200)
-      .json({
-        message: "Product removed from wishlist",
-        wishlist: user.wishlist,
-      });
+    res.status(200).json({
+      message: "Product removed from wishlist",
+      wishlist: user.wishlist,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -344,9 +347,9 @@ const logoutUser = (req, res) => {
   try {
     res.cookie("token", "", {
       httpOnly: true,
-      expires: new Date(0), // Expire immediately
-      sameSite: "lax",
-      secure: false, // true in production with HTTPS
+      expires: new Date(0),
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
     });
 
     res.status(200).json({ message: "Logged out successfully" });
