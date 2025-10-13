@@ -17,12 +17,7 @@ const app = express();
 
 // Middlewares
 app.use(express.json({ limit: "10kb" }));
-const allowedOrigins = [
-  "http://localhost:5173", // dev (vite)
-  "http://localhost:3000",
-  "https://div-ecom.netlify.app",
-  "https://div-0-0-1.vercel.app" // production frontend
-];
+const allowedOrigins = ["http://localhost:5173", "http://localhost:3000","https://div-ecom.netlify.app","https://div-0-0-1.vercel.app"];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -34,14 +29,25 @@ app.use(cors({
 }));
 app.use(morgan("dev"));
 app.use(cookieParser());
-app.use(mongoSanitize());
-app.use(helmet());
+app.use(
+  mongoSanitize({
+    onSanitize: ({ req, key }) => {
+      console.warn(`Sanitized ${key} in ${req.path}`);
+    },
+  })
+);
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
+
 
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200, // 200 requests per 15 min per IP
-  message: "Too many requests, please try again later.",
+  limit: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many requests, please try again later." },
 });
 app.use(limiter);
 
