@@ -29,8 +29,8 @@ router.delete("/addresses/:addressId", protect, deleteAddress);//done
 router.put("/addresses/:addressId", protect, updateAddress); //done
 
 //Wishlist
-router.get("/wishlist", protect, getWishlist);
-router.post("/wishlist/:productId", protect, addToWishlist);
-router.delete("/wishlist/:productId", protect, removeFromWishlist);
+router.get("/wishlist", protect, getWishlist); //done
+router.post("/wishlist/:productId", protect, addToWishlist); //done
+router.delete("/wishlist/:productId", protect, removeFromWishlist); //done
 
 module.exports = router;

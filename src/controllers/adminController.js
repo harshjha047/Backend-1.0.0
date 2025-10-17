@@ -58,11 +58,18 @@ const deleteUser = async (req, res) => {
 // Create product
 const createProduct = async (req, res) => {
   try {
-    const { name, description, price, stock, category, images } = req.body;
-    const product = await Product.create({ name, description, price, stock, category, images });
-    res.status(201).json(product);
+    const { name, description, new_price, old_price, category, brand, brandLogo, stock, images, variants} = req.body;
+
+    if (!name || !description || !new_price || !category || !brand || stock == null) res.status(400).json({ message: "Please fill all required fields" })
+
+    const product = new Product({ name, description, new_price, old_price, category, brand, brandLogo, stock, images: images || [], variants: variants || []});
+
+    const createdProduct = await product.save();
+
+    res.status(201).json({ success: true, message: "Product created successfully", product: createdProduct});
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Product creation error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

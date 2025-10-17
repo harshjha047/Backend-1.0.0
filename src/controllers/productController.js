@@ -123,10 +123,111 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// @desc    Add or update product review
+// @route   POST /api/products/:productId/reviews
+// @access  Private
+const addReview = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!rating) {
+      return res.status(400).json({ message: "Rating is required" });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Check if user already reviewed
+    const existingReview = product.reviews.find(
+      (rev) => rev.user.toString() === req.user._id.toString()
+    );
+
+    if (existingReview) {
+      // Update existing review
+      existingReview.rating = rating;
+      existingReview.comment = comment || existingReview.comment;
+    } else {
+      // Add new review
+      const review = {
+        user: req.user._id,
+        name: req.user.name,
+        rating: Number(rating),
+        comment,
+      };
+      product.reviews.push(review);
+    }
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Review added successfully",
+      reviews: product.reviews,
+    });
+  } catch (error) {
+    console.error("Error adding review:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Remove a user's review
+// @route   DELETE /api/products/:productId/reviews/:reviewId
+// @access  Private
+const removeReview = async (req, res) => {
+  try {
+    const { productId, reviewId } = req.params;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const review = product.reviews.find(
+      (rev) => rev._id.toString() === reviewId
+    );
+
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    // Only allow owner or admin to delete
+    if (
+      review.user.toString() !== req.user._id.toString() &&
+      req.user.role !== "admin"
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to delete this review" });
+    }
+
+    // Remove the review
+    product.reviews = product.reviews.filter(
+      (rev) => rev._id.toString() !== reviewId
+    );
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Review removed successfully",
+      reviews: product.reviews,
+    });
+  } catch (error) {
+    console.error("Error removing review:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 module.exports = {
   createProduct,
   getProducts,
   getProductById,
   updateProduct,
   deleteProduct,
+  addReview,
+  removeReview,
 };
